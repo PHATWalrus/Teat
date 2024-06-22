@@ -22,7 +22,17 @@ env:
   SFPassword: ${{ secrets.SFPassword }}
   SFUserName: ${{ secrets.SFUserName }}
   TARGET: "pbrp"
-  #EXTRA_CMD: "Extra Commands Here"
+  run: |
+          echo "BUILD_RELEASE_TYPE: $BUILD_RELEASE_TYPE"
+          echo "CHANGELOG: $CHANGELOG"
+          echo "BOT_API: $BOT_API"
+          echo "GCF_AUTH_KEY: $GCF_AUTH_KEY"
+          echo "GH_BOT_TOKEN: $GH_BOT_TOKEN"
+          echo "GitHubMail: $GitHubMail"
+          echo "GitHubName: $GitHubName"
+          echo "SFPassword: $SFPassword"
+          echo "SFUserName: $SFUserName"
+          echo "TARGET: $TARGET"
 
 jobs:
   PBRP_CI:
