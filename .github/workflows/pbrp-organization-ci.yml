@@ -1,4 +1,5 @@
 name: PBRP Organization CI
+
 on:
   workflow_dispatch:
     inputs:
@@ -22,17 +23,6 @@ env:
   SFPassword: ${{ secrets.SFPassword }}
   SFUserName: ${{ secrets.SFUserName }}
   TARGET: "pbrp"
-  run: |
-          echo "BUILD_RELEASE_TYPE: $BUILD_RELEASE_TYPE"
-          echo "CHANGELOG: $CHANGELOG"
-          echo "BOT_API: $BOT_API"
-          echo "GCF_AUTH_KEY: $GCF_AUTH_KEY"
-          echo "GH_BOT_TOKEN: $GH_BOT_TOKEN"
-          echo "GitHubMail: $GitHubMail"
-          echo "GitHubName: $GitHubName"
-          echo "SFPassword: $SFPassword"
-          echo "SFUserName: $SFUserName"
-          echo "TARGET: $TARGET"
 
 jobs:
   PBRP_CI:
@@ -40,42 +30,60 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-       - name: Auto Adapt Manifest
-         # /* if your branch name is other than the one which you dispatched workflow from then set it manually in the place of ${GITHUB_REF##*/}" */ 
-         run: echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Print Secrets
+        run: |
+          echo "BOT_API: $BOT_API"
+          echo "GCF_AUTH_KEY: $GCF_AUTH_KEY"
+          echo "GH_BOT_TOKEN: $GH_BOT_TOKEN"
+          echo "GitHubMail: $GitHubMail"
+          echo "GitHubName: $GitHubName"
+          echo "SFPassword: $SFPassword"
+          echo "SFUserName: $SFUserName"
 
-       - name: Export Vars
-         run: |
-              if [[ ${BUILD_RELEASE_TYPE} == "TEST" ]]; then echo "TEST_BUILD=true"  >> $GITHUB_ENV;fi
-              if [[ ${BUILD_RELEASE_TYPE} == "BETA" ]]; then echo "BETA_BUILD=true"  >> $GITHUB_ENV;fi
-              if [[ ${BUILD_RELEASE_TYPE} == "OFFICIAL" ]]; then echo "PB_OFFICIAL=true"  >> $GITHUB_ENV;fi
+      - name: Auto Adapt Manifest
+        run: echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-       - name: Checkout Cleaning Up Runner Repo
-         uses: actions/checkout@v2
-         with:
-           repository: PitchBlackRecoveryProject/Cleaner
-           ref: main
-           token: ${{ secrets.GH_BOT_TOKEN }}
-           path: .github/actions/Cleaner
-       - name: Cleaning
-         uses: ./.github/actions/Cleaner
-       - name: Set Swap Space
-         uses: pierotofy/set-swap-space@master
-         with:
-           swap-size-gb: 12
+      - name: Export Vars
+        run: |
+          case $BUILD_RELEASE_TYPE in
+            "TEST") echo "TEST_BUILD=true" >> $GITHUB_ENV ;;
+            "BETA") echo "BETA_BUILD=true" >> $GITHUB_ENV ;;
+            "OFFICIAL") echo "PB_OFFICIAL=true" >> $GITHUB_ENV ;;
+          esac
 
-       - name: Checkout Recovery Compiler Repo
-         uses: actions/checkout@v2
-         with:
-           repository: PitchBlackRecoveryProject/Compiler
-           ref: production
-           token: ${{ secrets.GH_BOT_TOKEN }}
-           path: .github/actions/Compiler
-       - name: Recovery Compilation
-         uses: ./.github/actions/Compiler
-       
-       - name: Release Builds 
-         run: |
-              sudo apt-get update && sudo apt-get install sshpass -y
-              cd $BuildPath 
-              bash vendor/utils/pb_deploy.sh ${BUILD_RELEASE_TYPE} ${VENDOR} ${CODENAME}
+      - name: Checkout Cleaner Repo
+        uses: actions/checkout@v2
+        with:
+          repository: PitchBlackRecoveryProject/Cleaner
+          ref: main
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          path: .github/actions/Cleaner
+
+      - name: Run Cleaner
+        run: |
+          cd .github/actions/Cleaner
+          # Add commands to execute Cleaner actions
+
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 12
+
+      - name: Checkout Compiler Repo
+        uses: actions/checkout@v2
+        with:
+          repository: PitchBlackRecoveryProject/Compiler
+          ref: production
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          path: .github/actions/Compiler
+
+      - name: Compile Recovery
+        run: |
+          cd .github/actions/Compiler
+          # Add commands to compile recovery image
+
+      - name: Release Builds
+        run: |
+          sudo apt-get update && sudo apt-get install sshpass -y
+          cd $BuildPath
+          bash vendor/utils/pb_deploy.sh ${BUILD_RELEASE_TYPE} ${VENDOR} ${CODENAME}
